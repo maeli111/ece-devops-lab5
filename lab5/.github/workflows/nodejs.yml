@@ -2,36 +2,38 @@ name: Node.js CI
 
 on:
   push:
-    branches: ["**"]
+    branches: [ "maeli" ]
   pull_request:
-    branches: ["master"]
+    branches: [ "maeli" ]
 
 jobs:
-  build-and-test:
+  build:
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        node-version: ['18.x', '20.x']
+        node-version: [18.x, 20.x, 22.x]
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
+          # Active le cache si tu as un package-lock.json
+          cache: npm
+          cache-dependency-path: lab5/package-lock.json
 
-      # (Ton projet est dans le dossier lab5)
       - name: Install dependencies
-        run: npm ci
         working-directory: lab5
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
       - name: Build (if present)
-        run: npm run build --if-present
         working-directory: lab5
+        run: npm run build --if-present
 
       - name: Test
-        run: npm test
         working-directory: lab5
+        run: npm test
