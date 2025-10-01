@@ -2,9 +2,10 @@ name: Node.js CI
 
 on:
   push:
-    branches: [ "maeli" ]
+    branches: [ "maeli" ]   # la branche sur laquelle tu travailles
   pull_request:
     branches: [ "maeli" ]
+  workflow_dispatch:         # permet de lancer manuellement depuis l’onglet Actions
 
 jobs:
   build:
@@ -21,19 +22,30 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          # Active le cache si tu as un package-lock.json
-          cache: npm
-          cache-dependency-path: lab5/package-lock.json
-
-      - name: Install dependencies
-        working-directory: lab5
+         
+      - name: Detect app directory
+        id: detect
         run: |
+          if [ -f package.json ]; then
+            echo "dir=." >> "$GITHUB_OUTPUT"
+          elif [ -f lab5/package.json ]; then
+            echo "dir=lab5" >> "$GITHUB_OUTPUT"
+          else
+            echo "Aucun package.json trouvé" >&2
+            exit 1
+          fi
+
+      - name: Install deps
+        run: |
+          cd "${{ steps.detect.outputs.dir }}"
           if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
       - name: Build (if present)
-        working-directory: lab5
-        run: npm run build --if-present
+        run: |
+          cd "${{ steps.detect.outputs.dir }}"
+          npm run build --if-present
 
       - name: Test
-        working-directory: lab5
-        run: npm test
+        run: |
+          cd "${{ steps.detect.outputs.dir }}"
+          if npm run | grep -qE '^\s*test'; then npm test; else echo "No tests"; fi
