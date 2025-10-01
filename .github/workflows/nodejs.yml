@@ -2,12 +2,12 @@ name: Node.js CI (with Redis)
 
 on:
   push:
-    branches: ["maeli"]         
+    branches: ["maeli"]      
     branches: ["maeli"]
   workflow_dispatch:
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
 
     services:
@@ -26,13 +26,14 @@ jobs:
         node-version: [18.x, 20.x, 22.x]
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-
+          
       - name: Detect app directory
         id: detect
         run: |
@@ -40,13 +41,10 @@ jobs:
             echo "dir=." >> "$GITHUB_OUTPUT"
           elif [ -f lab5/package.json ]; then
             echo "dir=lab5" >> "$GITHUB_OUTPUT"
-          elif [ -f lab5/lab5/package.json ]; then
-            echo "dir=lab5/lab5" >> "$GITHUB_OUTPUT"
           else
-            echo "No package.json found at '.', 'lab5', or 'lab5/lab5'." >&2
+            echo "No package.json found at '.' or 'lab5'." >&2
             exit 1
           fi
-          echo "App dir: $(cat $GITHUB_OUTPUT)"
 
       - name: Install deps
         run: |
