@@ -3,7 +3,7 @@ const db = require('../dbClient')
 module.exports = {
   create: (user, callback) => {
     // Check parameters
-    if(!user.username)
+    if (!user.username)
       return callback(new Error("Wrong user parameters"), null)
     // Create User schema
     const userObj = {
@@ -11,7 +11,7 @@ module.exports = {
       lastname: user.lastname,
     }
     // Check if user already exists
-    db.hgetall(user.username, function(err, res) {
+    db.hgetall(user.username, function (err, res) {
       if (err) return callback(err, null)
       if (!res) {
         // Save to DB
@@ -24,15 +24,27 @@ module.exports = {
       }
     })
   },
+
   get: (username, callback) => {
-    if(!username)
+    if (!username)
       return callback(new Error("Username must be provided"), null)
-    db.hgetall(username, function(err, res) {
+    db.hgetall(username, function (err, res) {
       if (err) return callback(err, null)
       if (res)
         callback(null, res)
       else
         callback(new Error("User doesn't exists"), null)
+    })
+  },
+
+  delete: (username, callback) => {
+    if (!username)
+      return callback(new Error("Username must be provided"), null)
+
+    db.del(username, (err, res) => {
+      if (err) return callback(err, null)
+      if (res === 1) callback(null, "User deleted")
+      else callback(new Error("User doesn't exists"), null)
     })
   }
 }
