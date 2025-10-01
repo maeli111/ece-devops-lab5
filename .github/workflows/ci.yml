@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, dev-miguel ]
+  pull_request:
+    branches: [ main, dev-miguel ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping || exit 1"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    defaults:
+      run:
+        working-directory: lab
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: lab/package-lock.json
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Run tests
+        env:
+          REDIS_HOST: 127.0.0.1
+          REDIS_PORT: 6379
+        run: |
+          if [ -f package.json ]; then
+            if npm run | grep -q " test"; then
+              npm test
+            else
+              echo "No test script, skipping tests."
+            fi
+          fi
+
+      - name: Coverage
+        run: |
+          if npm run | grep -q " coverage"; then
+            npm run coverage
+          else
+            echo "No coverage script, skipping."
+          fi
+
+      - name: Upload coverage artifact
+        if: success() && hashFiles('lab/coverage/**') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: lab/coverage
