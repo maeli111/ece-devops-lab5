@@ -3,6 +3,7 @@ name: Node.js CI (with Redis)
 on:
   push:
     branches: ["maeli"]      
+  pull_request:
     branches: ["maeli"]
   workflow_dispatch:
 
