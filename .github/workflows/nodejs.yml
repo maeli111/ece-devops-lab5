@@ -1,15 +1,25 @@
-name: Node.js CI
+name: Node.js CI (with Redis)
 
 on:
   push:
-    branches: [ "maeli" ]   # la branche sur laquelle tu travailles
-  pull_request:
-    branches: [ "maeli" ]
-  workflow_dispatch:         # permet de lancer manuellement depuis l’onglet Actions
+    branches: ["maeli"]         
+    branches: ["maeli"]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     strategy:
       matrix:
@@ -22,7 +32,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-         
+
       - name: Detect app directory
         id: detect
         run: |
@@ -30,10 +40,13 @@ jobs:
             echo "dir=." >> "$GITHUB_OUTPUT"
           elif [ -f lab5/package.json ]; then
             echo "dir=lab5" >> "$GITHUB_OUTPUT"
+          elif [ -f lab5/lab5/package.json ]; then
+            echo "dir=lab5/lab5" >> "$GITHUB_OUTPUT"
           else
-            echo "Aucun package.json trouvé" >&2
+            echo "No package.json found at '.', 'lab5', or 'lab5/lab5'." >&2
             exit 1
           fi
+          echo "App dir: $(cat $GITHUB_OUTPUT)"
 
       - name: Install deps
         run: |
@@ -45,7 +58,15 @@ jobs:
           cd "${{ steps.detect.outputs.dir }}"
           npm run build --if-present
 
-      - name: Test
+      - name: Test (with Redis env)
+        env:
+          REDIS_URL: redis://localhost:6379
+          REDIS_HOST: localhost
+          REDIS_PORT: "6379"
         run: |
           cd "${{ steps.detect.outputs.dir }}"
-          if npm run | grep -qE '^\s*test'; then npm test; else echo "No tests"; fi
+          if npm run | grep -qE '^\s*test'; then
+            npm test
+          else
+            echo "No tests"
+          fi
