@@ -2,14 +2,13 @@ name: Node.js CI (with Redis)
 
 on:
   push:
-    branches: ["maeli", "master"]
+    branches: ["maeli"]
   pull_request:
-    branches: ["maeli", "master"]
+    branches: ["maeli"]
   workflow_dispatch:
 
-
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
 
     services:
@@ -24,6 +23,7 @@ jobs:
           --health-retries 5
 
     strategy:
+      fail-fast: false
       matrix:
         node-version: [18.x, 20.x, 22.x]
 
@@ -31,11 +31,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          
       - name: Detect app directory
         id: detect
         run: |
@@ -44,10 +39,15 @@ jobs:
           elif [ -f lab5/package.json ]; then
             echo "dir=lab5" >> "$GITHUB_OUTPUT"
           else
-            echo "No package.json found at '.' or 'lab5'." >&2
+            echo "No package.json at '.' or 'lab5'." >&2
             exit 1
           fi
 
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          
       - name: Install deps
         run: |
           cd "${{ steps.detect.outputs.dir }}"
@@ -65,8 +65,4 @@ jobs:
           REDIS_PORT: "6379"
         run: |
           cd "${{ steps.detect.outputs.dir }}"
-          if npm run | grep -qE '^\s*test'; then
-            npm test
-          else
-            echo "No tests"
-          fi
+          if npm run | grep -qE '^\s*test'; then npm test; else echo "No tests"; fi
