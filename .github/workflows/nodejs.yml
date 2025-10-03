@@ -2,10 +2,11 @@ name: Node.js CI (with Redis)
 
 on:
   push:
-    branches: ["maeli"]      
+    branches: ["maeli", "master"]
   pull_request:
-    branches: ["maeli"]
+    branches: ["maeli", "master"]
   workflow_dispatch:
+
 
 jobs:
   test:
